@@ -2,30 +2,12 @@ package com.example.cashflow.data
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import android.content.Context
-import androidx.room.Room
 
-@Database(entities = [Transaction::class], version = 1, exportSchema = false)
+@Database(entities = [Transaction::class, Budget::class, Category::class], version = 2, exportSchema = false) // Incrementé la versión por el cambio de esquema
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun transactionDao(): TransactionDao
+    abstract fun budgetDao(): BudgetDao
+    abstract fun categoryDao(): CategoryDao
 
-    companion object {
-        @Volatile
-        private var INSTANCE: AppDatabase? = null
-
-        fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "app_database"
-                )
-                    .fallbackToDestructiveMigration() // Or handle migrations properly
-                    .build()
-                INSTANCE = instance
-                instance
-            }
-        }
-    }
 }

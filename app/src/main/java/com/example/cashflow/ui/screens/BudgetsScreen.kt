@@ -3,123 +3,185 @@ package com.example.cashflow.ui.screens
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.cashflow.ui.theme.GlassmorphismCard
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cashflow.data.Budget
+import com.example.cashflow.data.Category
+import com.example.cashflow.ui.components.GlassmorphismCard
 import com.example.cashflow.ui.viewmodel.BudgetsViewModel
+import com.example.cashflow.ui.viewmodel.BudgetWithProgress
 
 @Composable
-fun BudgetsScreen(budgetsViewModel: BudgetsViewModel = viewModel()) {
-    val budgetsWithSpending by budgetsViewModel.budgetsWithSpending.collectAsState(initial = emptyList())
-    val overallBudgetProgress by budgetsViewModel.overallBudgetProgress.collectAsState(initial = 0f)
+fun BudgetsScreen(
+    viewModel: BudgetsViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    var showCreateDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(onClick = {
-                // TODO: Navigate to or show dialog for creating a new budget
-            }) {
-                Icon(Icons.Filled.Add, contentDescription = "Añadir Presupuesto")
+            FloatingActionButton(onClick = { showCreateDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Crear Presupuesto")
             }
         }
-    ) { paddingValues ->
+    ) { padding ->
         Column(
             modifier = Modifier
-                .padding(paddingValues)
-                .padding(16.dp)
                 .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
         ) {
-            OverallBudgetProgress(progress = overallBudgetProgress)
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(budgetsWithSpending) { budget ->
-                    BudgetItem(budget = budget) {
-                        // TODO: Handle budget deletion
+            Text("Presupuestos", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 16.dp))
+            
+            if (uiState.budgetsWithProgress.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Aún no has creado ningún presupuesto.")
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(uiState.budgetsWithProgress) { budgetWithProgress ->
+                        BudgetCard(
+                            item = budgetWithProgress,
+                            onDelete = { viewModel.deleteBudget(it) }
+                        )
                     }
                 }
             }
         }
+
+        if (showCreateDialog) {
+            CreateBudgetDialog(
+                availableCategories = uiState.availableCategories,
+                onDismiss = { showCreateDialog = false },
+                onCreate = { category, amount ->
+                    viewModel.createBudget(category, amount)
+                    showCreateDialog = false
+                }
+            )
+        }
     }
 }
 
 @Composable
-fun OverallBudgetProgress(progress: Float) {
+private fun BudgetCard(item: BudgetWithProgress, onDelete: (Budget) -> Unit) {
+    val progressColor = when {
+        item.progress > 0.9f -> MaterialTheme.colorScheme.error
+        item.progress > 0.7f -> Color(0xFFFFA000) // Amber
+        else -> MaterialTheme.colorScheme.primary
+    }
+
     GlassmorphismCard {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Progreso Total de Presupuestos", style = MaterialTheme.typography.h6)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.budget.category,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { onDelete(item.budget) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar Presupuesto")
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "${formatCurrency(item.spentAmount)} de ${formatCurrency(item.budget.amount)}",
+                style = MaterialTheme.typography.bodyMedium
+            )
             Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = progress,
+                progress = { item.progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp),
-                color = when {
-                    progress > 0.9f -> Color.Red
-                    progress > 0.7f -> Color.Orange
-                    else -> MaterialTheme.colors.primary
-                },
-                backgroundColor = MaterialTheme.colors.surface
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                "Gastado ${String.format("%.2f", progress * 100)}%", // This calculation might need adjustment based on total budget vs total spending
-                style = MaterialTheme.typography.body2,
-                modifier = Modifier.align(Alignment.End)
+                    .height(8.dp)
+                    .clip(MaterialTheme.shapes.small),
+                color = progressColor
             )
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BudgetItem(budget: BudgetsViewModel.BudgetWithSpending, onDeleteClick: () -> Unit) {
-    GlassmorphismCard {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(budget.category, style = MaterialTheme.typography.h6)
-                Spacer(modifier = Modifier.height(4.dp))
-                LinearProgressIndicator(
-                    progress = budget.spending / budget.limit.toFloat(),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp),
-                    color = when {
-                        budget.spending > budget.limit -> Color.Red
-                        budget.spending > budget.limit * 0.9f -> Color.Orange
-                        else -> MaterialTheme.colors.primary
-                    },
-                    backgroundColor = MaterialTheme.colors.surface
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    "Gastado ${String.format("%.2f", budget.spending)} de ${String.format("%.2f", budget.limit)}",
-                    style = MaterialTheme.typography.body2
+private fun CreateBudgetDialog(
+    availableCategories: List<Category>,
+    onDismiss: () -> Unit,
+    onCreate: (String, Double) -> Unit
+) {
+    var amount by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    val isFormValid = amount.isNotBlank() && selectedCategory != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nuevo Presupuesto") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Categoría") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        availableCategories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    selectedCategory = category
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { if (it.matches(Regex("^\\d*\\.?\\d*\$"))) amount = it },
+                    label = { Text("Monto del Presupuesto") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
-            IconButton(onClick = onDeleteClick) {
-                // TODO: Use a delete icon
-                Text("X") // Placeholder
+        },
+        confirmButton = {
+            Button(
+                onClick = { onCreate(selectedCategory!!.name, amount.toDouble()) },
+                enabled = isFormValid
+            ) {
+                Text("Crear")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
             }
         }
-    }
+    )
 }
-
-// TODO: Create composable for CreateBudgetDialog or screen
-// TODO: Create composable for DeleteBudgetConfirmationDialog

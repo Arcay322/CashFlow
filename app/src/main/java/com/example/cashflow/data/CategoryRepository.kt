@@ -1,16 +1,15 @@
 package com.example.cashflow.data
 
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class CategoryRepository(private val categoryDao: CategoryDao) {
+@Singleton
+class CategoryRepository @Inject constructor(private val categoryDao: CategoryDao) {
 
-    fun getAllCategories(): Flow<List<Category>> {
-        return categoryDao.getAllCategories()
-    }
+    fun getAllCategories(): Flow<List<Category>> = categoryDao.getAllCategories()
 
-    fun getCategoriesByType(type: String): Flow<List<Category>> {
-        return categoryDao.getCategoriesByType(type)
-    }
+    fun getCategoriesByType(type: String): Flow<List<Category>> = categoryDao.getCategoriesByType(type)
 
     suspend fun insertCategory(category: Category) {
         categoryDao.insertCategory(category)

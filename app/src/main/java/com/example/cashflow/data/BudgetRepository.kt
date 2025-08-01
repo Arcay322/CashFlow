@@ -1,16 +1,15 @@
 package com.example.cashflow.data
 
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class BudgetRepository(private val budgetDao: BudgetDao) {
+@Singleton
+class BudgetRepository @Inject constructor(private val budgetDao: BudgetDao) {
 
-    fun getAllBudgets(): Flow<List<Budget>> {
-        return budgetDao.getAllBudgets()
-    }
+    fun getAllBudgets(): Flow<List<Budget>> = budgetDao.getAllBudgets()
 
-    fun getBudgetByCategory(category: String): Flow<Budget?> {
-        return budgetDao.getBudgetByCategory(category)
-    }
+    fun getBudgetByCategory(category: String): Flow<Budget?> = budgetDao.getBudgetByCategory(category)
 
     suspend fun insertBudget(budget: Budget) {
         budgetDao.insertBudget(budget)

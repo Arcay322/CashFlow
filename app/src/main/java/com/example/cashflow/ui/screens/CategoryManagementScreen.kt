@@ -1,73 +1,71 @@
 package com.example.cashflow.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cashflow.data.Category
 import com.example.cashflow.ui.viewmodel.CategoryManagementViewModel
 
 @Composable
 fun CategoryManagementScreen(
-    viewModel: CategoryManagementViewModel = viewModel()
+    viewModel: CategoryManagementViewModel = hiltViewModel()
 ) {
-    val categories by viewModel.categories.collectAsState(emptyList())
-    var showAddEditDialog by remember { mutableStateOf(false) }
-    var editingCategory by remember { mutableStateOf<Category?>(null) }
+    val categories by viewModel.categories.collectAsState()
+    var showDialog by remember { mutableStateOf(false) }
+    var categoryToEdit by remember { mutableStateOf<Category?>(null) }
 
     Scaffold(
-        topBar = {
-            TopAppBar(title = { Text("Gestionar Categorías") })
-        },
         floatingActionButton = {
             FloatingActionButton(onClick = {
-                editingCategory = null
-                showAddEditDialog = true
+                categoryToEdit = null
+                showDialog = true 
             }) {
                 Icon(Icons.Default.Add, contentDescription = "Añadir Categoría")
             }
         }
-    ) { paddingValues ->
-        LazyColumn(
+    ) { padding ->
+        Column(
             modifier = Modifier
-                .padding(paddingValues)
+                .fillMaxSize()
+                .padding(padding)
                 .padding(16.dp)
         ) {
-            items(categories) { category ->
-                CategoryItem(
-                    category = category,
-                    onEditClick = {
-                        editingCategory = it
-                        showAddEditDialog = true
-                    },
-                    onDeleteClick = { viewModel.deleteCategory(it) }
-                )
-                Divider()
+            Text("Gestionar Categorías", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 16.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(categories) { category ->
+                    CategoryItem(
+                        category = category,
+                        onEdit = {
+                            categoryToEdit = it
+                            showDialog = true
+                        },
+                        onDelete = { viewModel.deleteCategory(it) }
+                    )
+                }
             }
         }
 
-        if (showAddEditDialog) {
-            AddEditCategoryDialog(
-                categoryToEdit = editingCategory,
-                onDismiss = { showAddEditDialog = false },
-                onSave = { newCategory ->
-                    if (editingCategory == null) {
-                        viewModel.addCategory(newCategory)
+        if (showDialog) {
+            CategoryEditDialog(
+                category = categoryToEdit,
+                onDismiss = { showDialog = false },
+                onConfirm = { name, icon, type ->
+                    if (categoryToEdit == null) {
+                        viewModel.addCategory(name, icon, type)
                     } else {
-                        viewModel.editCategory(newCategory.copy(id = editingCategory!!.id))
+                        viewModel.updateCategory(categoryToEdit!!.copy(name = name, icon = icon, type = type))
                     }
-                    showAddEditDialog = false
+                    showDialog = false
                 }
             )
         }
@@ -75,24 +73,29 @@ fun CategoryManagementScreen(
 }
 
 @Composable
-fun CategoryItem(
+private fun CategoryItem(
     category: Category,
-    onEditClick: (Category) -> Unit,
-    onDeleteClick: (Category) -> Unit
+    onEdit: (Category) -> Unit,
+    onDelete: (Category) -> Unit
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Text(text = category.name, fontWeight = FontWeight.Bold)
-        Row {
-            IconButton(onClick = { onEditClick(category) }) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Aquí se podría mostrar el icono de la categoría
+            // Icon( ... )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = category.name, style = MaterialTheme.typography.bodyLarge)
+                Text(text = category.type, style = MaterialTheme.typography.bodySmall)
+            }
+            IconButton(onClick = { onEdit(category) }) {
                 Icon(Icons.Default.Edit, contentDescription = "Editar Categoría")
             }
-            IconButton(onClick = { onDeleteClick(category) }) {
+            IconButton(onClick = { onDelete(category) }) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar Categoría")
             }
         }
@@ -100,65 +103,46 @@ fun CategoryItem(
 }
 
 @Composable
-fun AddEditCategoryDialog(
-    categoryToEdit: Category?,
+private fun CategoryEditDialog(
+    category: Category?,
     onDismiss: () -> Unit,
-    onSave: (Category) -> Unit
+    onConfirm: (String, String, String) -> Unit
 ) {
-    var name by remember { mutableStateOf(categoryToEdit?.name ?: "") }
-    var icon by remember { mutableStateOf(categoryToEdit?.icon ?: "") } // Implement icon selection later
-    var type by remember { mutableStateOf(categoryToEdit?.type ?: "Gasto") } // Default to Gasto
+    var name by remember { mutableStateOf(category?.name ?: "") }
+    var type by remember { mutableStateOf(category?.type ?: "Gasto") }
+    val isFormValid = name.isNotBlank()
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (categoryToEdit == null) "Añadir Categoría" else "Editar Categoría") },
+        title = { Text(if (category == null) "Nueva Categoría" else "Editar Categoría") },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Nombre de la Categoría") },
-                    modifier = Modifier.fillMaxWidth()
+                    label = { Text("Nombre de la Categoría") }
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                // TODO: Implement icon selection UI
-                Text("Icon: $icon (Selección de icono pendiente)")
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Tipo:")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Row {
-                        listOf("Gasto", "Ingreso").forEach { categoryType ->
-                            Row(
-                                modifier = Modifier
-                                    .clickable { type = categoryType }
-                                    .padding(horizontal = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = type == categoryType,
-                                    onClick = { type = categoryType }
-                                )
-                                Text(categoryType)
-                            }
-                        }
-                    }
+                Row {
+                   Text("Tipo: ")
+                   RadioButton(selected = type == "Gasto", onClick = { type = "Gasto" })
+                   Text("Gasto")
+                   Spacer(Modifier.width(8.dp))
+                   RadioButton(selected = type == "Ingreso", onClick = { type = "Ingreso" })
+                   Text("Ingreso")
                 }
+                // Aquí se podría añadir un selector de iconos
             }
         },
         confirmButton = {
             Button(
-                onClick = {
-                    if (name.isNotBlank()) {
-                        onSave(Category(name = name, icon = icon, type = type))
-                    }
-                }
+                onClick = { onConfirm(name, "", type) }, // Icono se deja vacío por ahora
+                enabled = isFormValid
             ) {
                 Text("Guardar")
             }
         },
         dismissButton = {
-            Button(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("Cancelar")
             }
         }

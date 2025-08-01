@@ -1,12 +1,21 @@
 package com.example.cashflow.data
 
 import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class TransactionRepository(private val transactionDao: TransactionDao) {
+@Singleton
+class TransactionRepository @Inject constructor(private val transactionDao: TransactionDao) {
 
-    fun getAllTransactions(): Flow<List<Transaction>> {
-        return transactionDao.getAllTransactions()
-    }
+    fun getAllTransactions(): Flow<List<Transaction>> = transactionDao.getAllTransactions()
+
+    fun getRecentTransactions(limit: Int): Flow<List<Transaction>> = transactionDao.getRecentTransactions(limit)
+
+    fun getExpenseByCategory(): Flow<List<TransactionDao.CategoryExpense>> = transactionDao.getExpenseByCategory()
+
+    fun getTotalIncome(): Flow<Double> = transactionDao.getTotalIncome()
+
+    fun getTotalExpense(): Flow<Double> = transactionDao.getTotalExpense()
 
     suspend fun insertTransaction(transaction: Transaction) {
         transactionDao.insertTransaction(transaction)
@@ -19,43 +28,4 @@ class TransactionRepository(private val transactionDao: TransactionDao) {
     suspend fun deleteTransaction(transaction: Transaction) {
         transactionDao.deleteTransaction(transaction)
     }
-
-    fun getTransactionsByType(type: String): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsByType(type)
-    }
-
-    fun getTransactionsByCategory(category: String): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsByCategory(category)
-    }
-
-    fun getTransactionsByDateRange(startDate: Long, endDate: Long): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsByDateRange(startDate, endDate)
-    }
-
-    fun searchTransactions(searchQuery: String): Flow<List<Transaction>> {
-        return transactionDao.searchTransactions(searchQuery)
-    }
-
-    fun getTotalIncome(): Flow<Double?> {
-        return transactionDao.getTotalIncome()
-    }
-
-    fun getTotalExpense(): Flow<Double?> {
-        return transactionDao.getTotalExpense()
-    }
-
-    fun getRecentTransactions(limit: Int): Flow<List<Transaction>> {
-        return transactionDao.getRecentTransactions(limit)
-    }
-
-    fun getExpenseDistributionByCategory(date: Long): Flow<Map<String, Double>> {
-        return transactionDao.getExpenseDistributionByCategory(date)
-    }
-
-    fun getTotalExpenseByCategory(category: String): Flow<Double?> {
-        return transactionDao.getTotalExpenseByCategory(category)
-    }
-
-    // You could add methods here for more complex queries or calculations if needed
-    // For example, calculating the balance for a specific period
 }

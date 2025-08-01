@@ -1,51 +1,90 @@
 package com.example.cashflow.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.cashflow.data.Transaction
 import com.example.cashflow.data.TransactionRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
+import java.text.SimpleDateFormat
 import java.util.*
-class TransactionHistoryViewModel(private val repository: TransactionRepository) : ViewModel() {
+import javax.inject.Inject
+
+data class HistoryUiState(
+    val transactions: Map<String, List<Transaction>> = emptyMap(),
+    val searchQuery: String = "",
+    val filterType: String? = null // "Ingreso", "Gasto", or null for both
+)
+
+@HiltViewModel
+class TransactionHistoryViewModel @Inject constructor(
+    private val transactionRepository: TransactionRepository
+) : ViewModel() {
 
     private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
     private val _filterType = MutableStateFlow<String?>(null)
-    val filterType: StateFlow<String?> = _filterType.asStateFlow()
 
-    private val _filterCategory = MutableStateFlow<String?>(null)
-    val filterCategory: StateFlow<String?> = _filterCategory.asStateFlow()
+    // El estado de la UI combina las transacciones originales con los filtros
+    val uiState: StateFlow<HistoryUiState> = combine(
+        transactionRepository.getAllTransactions(),
+        _searchQuery,
+        _filterType
+    ) { allTransactions, query, type ->
+        val filteredTransactions = allTransactions.filter { transaction ->
+            val matchesSearch = if (query.isBlank()) {
+                true
+            } else {
+                transaction.description.contains(query, ignoreCase = true) ||
+                transaction.category.contains(query, ignoreCase = true)
+            }
+            val matchesType = type == null || transaction.type == type
+            
+            matchesSearch && matchesType
+        }
+        
+        HistoryUiState(
+            transactions = filteredTransactions.groupBy { getFormattedDate(it.date) },
+            searchQuery = query,
+            filterType = type
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = HistoryUiState()
+    )
 
-    private val _filterDateRange = MutableStateFlow<Pair<Long, Long>?>(null)
-    val filterDateRange: StateFlow<Pair<Long, Long>?> = _filterDateRange.asStateFlow()
-
-    val transactions: StateFlow<Map<Long, List<Transaction>>> = repository.getAllTransactions()
-        .asStateFlow()
-        .map { transactions -> transactions.groupBy { transaction -> getDateWithoutTime(transaction.date) }.toSortedMap(compareByDescending { it }) }
-
-    fun setSearchQuery(query: String) {
-        _searchQuery.value = query
+    fun onSearchQueryChange(newQuery: String) {
+        _searchQuery.value = newQuery
     }
 
-    fun setFilterType(type: String?) {
-        _filterType.value = type
+    fun onFilterTypeChange(newType: String?) {
+        _filterType.value = newType
+    }
+    
+    // Función para agrupar las fechas por "Hoy", "Ayer" y "dd MMMM"
+    private fun getFormattedDate(timestamp: Long): String {
+        val sdf = SimpleDateFormat("dd MMMM, yyyy", Locale("es", "ES"))
+        val transactionDate = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val today = Calendar.getInstance()
+        
+        return when {
+            isSameDay(transactionDate, today) -> "Hoy"
+            isYesterday(transactionDate, today) -> "Ayer"
+            else -> sdf.format(transactionDate.time)
+        }
+    }
+    
+    private fun isSameDay(cal1: Calendar, cal2: Calendar): Boolean {
+        return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR) &&
+               cal1.get(Calendar.DAY_OF_YEAR) == cal2.get(Calendar.DAY_OF_YEAR)
     }
 
-    fun setFilterCategory(category: String?) {
-        _filterCategory.value = category
-    }
-
-    fun setFilterDateRange(startDate: Long?, endDate: Long?) {
-        _filterDateRange.value = if (startDate != null && endDate != null) Pair(startDate, endDate) else null
-    }
-
-    private fun getDateWithoutTime(timestamp: Long): Long {
-        val calendar = Calendar.getInstance()
-        calendar.timeInMillis = timestamp
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0).set(Calendar.SECOND, 0).set(Calendar.MILLISECOND, 0)
-        return calendar.timeInMillis
+    private fun isYesterday(cal1: Calendar, cal2: Calendar): Boolean {
+        cal1.add(Calendar.DAY_OF_YEAR, 1)
+        return isSameDay(cal1, cal2)
     }
 }

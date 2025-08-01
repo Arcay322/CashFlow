@@ -1,69 +1,51 @@
-package com.example.cashflow.ui.dashboard
+package com.example.cashflow.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cashflow.data.Transaction
+import com.example.cashflow.data.TransactionDao
 import com.example.cashflow.data.TransactionRepository
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.catch
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.util.Calendar
-import java.util.Locale
+import javax.inject.Inject
 
-// Renamed package to follow standard naming conventions
-class DashboardViewModel(
+@HiltViewModel
+class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
-    // Data class to hold expense distribution data
-    data class ExpenseDistribution(
-        val category: String,
-        val amount: Double
-    )
+    private val recentTransactions = transactionRepository.getRecentTransactions(5)
+    private val totalIncome = transactionRepository.getTotalIncome()
+    private val totalExpense = transactionRepository.getTotalExpense()
+    private val expenseDistribution = transactionRepository.getExpenseByCategory()
 
-    // Flow for the total balance for the current month
-    // Combine total income and total expense to get the balance
-    val currentMonthBalance: StateFlow<Double> =
-        transactionRepository.getTotalIncome()
-            .combine(transactionRepository.getTotalExpense()) { income, expense ->
-                (income ?: 0.0) - (expense ?: 0.0)
-            }
-            .catch { emit(0.0) } // Handle errors by emitting a default value
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                // Set an initial value
-                initialValue = 0.0
-            )
-
-
-    // Flow for recent transactions
-    val recentTransactions = transactionRepository.getRecentTransactions(5)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            // Set an initial value
-            initialValue = emptyList()
+    val uiState: StateFlow<DashboardUiState> = combine(
+        recentTransactions,
+        totalIncome,
+        totalExpense,
+        expenseDistribution
+    ) { recent, income, expense, distribution ->
+        DashboardUiState(
+            balance = (income ?: 0.0) - (expense ?: 0.0),
+            totalIncome = income ?: 0.0,
+            totalExpense = expense ?: 0.0,
+            recentTransactions = recent,
+            expenseDistribution = distribution
         )
-
-    // Flow for expense distribution by category for the current month
-    // Get the current month's start date in milliseconds
-    private val currentMonth = Calendar.getInstance().apply {
-        set(Calendar.DAY_OF_MONTH, 1)
-        set(Calendar.HOUR_OF_DAY, 0)
-        set(Calendar.MINUTE, 0)
-        set(Calendar.SECOND, 0)
-        set(Calendar.MILLISECOND, 0)
-    }.timeInMillis
-
-    val expenseDistribution: StateFlow<List<ExpenseDistribution>> =
-        transactionRepository.getExpenseDistributionByCategory(currentMonth)
-            .stateIn(
-                scope = viewModelScope,
-                started = SharingStarted.WhileSubscribed(5000),
-                initialValue = emptyList()
-            )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = DashboardUiState()
+    )
 }
+
+data class DashboardUiState(
+    val balance: Double = 0.0,
+    val totalIncome: Double = 0.0,
+    val totalExpense: Double = 0.0,
+    val recentTransactions: List<Transaction> = emptyList(),
+    val expenseDistribution: List<TransactionDao.CategoryExpense> = emptyList()
+)
