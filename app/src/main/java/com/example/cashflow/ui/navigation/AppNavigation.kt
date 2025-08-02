@@ -15,11 +15,11 @@ fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifie
         startDestination = Routes.DASHBOARD,
         modifier = modifier
     ) {
-        composable(Routes.DASHBOARD) { DashboardScreen() }
-        composable(Routes.HISTORY) { TransactionHistoryScreen() }
-        composable(Routes.BUDGETS) { BudgetsScreen() }
-        composable(Routes.SETTINGS) { SettingsScreen(navController = navController) }
-        composable(Routes.ADD_TRANSACTION) { AddEditTransactionScreen(navController = navController) }
-        composable(Routes.CATEGORY_MANAGEMENT) { CategoryManagementScreen() }
+        composable(Routes.DASHBOARD) { DashboardScreen(hiltViewModel()) }
+        composable(Routes.HISTORY) { TransactionHistoryScreen(hiltViewModel()) }
+        composable(Routes.BUDGETS) { BudgetsScreen(hiltViewModel()) }
+        composable(Routes.SETTINGS) { SettingsScreen(navController) }
+        composable(Routes.ADD_TRANSACTION) { AddEditTransactionScreen(navController) }
+        composable(Routes.CATEGORY_MANAGEMENT) { CategoryManagementScreen(hiltViewModel()) }
     }
 }

@@ -7,4 +7,5 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.UploadFile
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
-// ... (El resto del archivo SettingsScreen corregido con los imports)
+import com.example.cashflow.ui.navigation.Routes
+// ... (El resto del archivo SettingsScreen.kt corregido)

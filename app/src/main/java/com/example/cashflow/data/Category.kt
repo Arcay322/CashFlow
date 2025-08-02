@@ -8,5 +8,6 @@ data class Category(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     val name: String,
-    val type: String // "Ingreso" o "Gasto"
+    val type: String,
+    val icon: String // Campo restaurado
 )
