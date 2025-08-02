@@ -16,7 +16,7 @@ interface TransactionDao {
 
     @Query("SELECT * FROM `transaction` ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<Transaction>>
-    
+
     @Query("SELECT * FROM `transaction` ORDER BY date DESC LIMIT :limit")
     fun getRecentTransactions(limit: Int): Flow<List<Transaction>>
 
@@ -24,12 +24,17 @@ interface TransactionDao {
     fun getExpenseByCategory(): Flow<List<CategoryExpense>>
 
     @Query("SELECT SUM(amount) FROM `transaction` WHERE type = 'Ingreso'")
-    fun getTotalIncome(): Flow<Double?> // Hacemos nullable por si no hay transacciones
+    fun getTotalIncome(): Flow<Double?> // Nullable en caso de que no haya ingresos
 
     @Query("SELECT SUM(amount) FROM `transaction` WHERE type = 'Gasto'")
-    fun getTotalExpense(): Flow<Double?> // Hacemos nullable por si no hay transacciones
+    fun getTotalExpense(): Flow<Double?> // Nullable en caso de que no haya gastos
 }
 
-// Clase de datos para el resultado de la consulta agrupada
-// La sacamos fuera de la interfaz para que sea una clase de primer nivel
-data class CategoryExpense(val category: String, val total: Double)
+/**
+ * Esta clase de datos DEBE estar fuera de la interfaz del DAO.
+ * Se utiliza para mapear el resultado de la consulta SQL que agrupa los gastos.
+ */
+data class CategoryExpense(
+    val category: String,
+    val total: Double
+)
