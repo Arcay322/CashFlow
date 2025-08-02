@@ -8,7 +8,16 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// ... (Data classes BudgetWithProgress y BudgetsUiState permanecen igual)
+data class BudgetWithProgress(
+    val budget: Budget,
+    val spentAmount: Double,
+    val progress: Float
+)
+
+data class BudgetsUiState(
+    val budgetsWithProgress: List<BudgetWithProgress> = emptyList(),
+    val availableCategories: List<Category> = emptyList()
+)
 
 @HiltViewModel
 class BudgetsViewModel @Inject constructor(
@@ -19,18 +28,16 @@ class BudgetsViewModel @Inject constructor(
 
     val uiState: StateFlow<BudgetsUiState> = combine(
         budgetRepository.getAllBudgets(),
-        transactionRepository.getExpensesByCategory(), // <-- Nombre corregido
+        transactionRepository.getExpensesByCategory(),
         categoryRepository.getCategoriesByType("Gasto")
     ) { budgets, expenses, categories ->
         val expenseMap = expenses.associate { it.category to it.total }
         val budgetCategoryNames = budgets.map { it.category }.toSet()
-
         val budgetsWithProgress = budgets.map { budget ->
             val spent = expenseMap[budget.category] ?: 0.0
             val progress = if (budget.amount > 0) (spent / budget.amount).toFloat() else 0f
             BudgetWithProgress(budget, spent, progress.coerceIn(0f, 1f))
         }
-
         BudgetsUiState(
             budgetsWithProgress = budgetsWithProgress,
             availableCategories = categories.filter { it.name !in budgetCategoryNames }

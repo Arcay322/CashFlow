@@ -21,7 +21,7 @@ import com.example.cashflow.ui.navigation.Routes
 import com.example.cashflow.ui.theme.CashFlowTheme
 
 @Composable
-fun CashFlowApp() {
+fun MainScreen() { // <-- FUNCIÓN RENOMBRADA
     CashFlowTheme {
         val navController = rememberNavController()
         Scaffold(
@@ -46,11 +46,9 @@ fun BottomNavigationBar(navController: NavController) {
         BottomNavItem.Budgets,
         BottomNavItem.Settings
     )
-
     NavigationBar {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
-
         items.forEach { item ->
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.title) },
@@ -69,8 +67,8 @@ fun BottomNavigationBar(navController: NavController) {
 }
 
 sealed class BottomNavItem(var title: String, var icon: ImageVector, var route: String) {
-    object Dashboard : BottomNavItem("Dashboard", Icons.Default.Dashboard, Routes.DASHBOARD)
-    object History : BottomNavItem("Historial", Icons.Default.History, Routes.HISTORY)
-    object Budgets : BottomNavItem("Presupuesto", Icons.Default.Assessment, Routes.BUDGETS)
-    object Settings : BottomNavItem("Ajustes", Icons.Default.Settings, Routes.SETTINGS)
+    object Dashboard : BottomNavItem("Dashboard", Icons.Filled.Dashboard, Routes.DASHBOARD)
+    object History : BottomNavItem("Historial", Icons.Filled.History, Routes.HISTORY)
+    object Budgets : BottomNavItem("Presupuesto", Icons.Filled.Assessment, Routes.BUDGETS)
+    object Settings : BottomNavItem("Ajustes", Icons.Filled.Settings, Routes.SETTINGS)
 }

@@ -38,7 +38,7 @@ fun CashFlowTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composab
     MaterialTheme(
         colorScheme = colors,
         typography = Typography,
-        shapes = Shapes,
+        shapes = Shapes, // <-- AHORA FUNCIONA
         content = content
     )
 }
