@@ -2,8 +2,8 @@ package com.example.cashflow.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cashflow.data.CategoryExpense
 import com.example.cashflow.data.Transaction
-import com.example.cashflow.data.TransactionDao
 import com.example.cashflow.data.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,21 +17,14 @@ class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository
 ) : ViewModel() {
 
-    private val recentTransactions = transactionRepository.getRecentTransactions(5)
-    private val totalIncome = transactionRepository.getTotalIncome()
-    private val totalExpense = transactionRepository.getTotalExpense()
-    private val expenseDistribution = transactionRepository.getExpenseByCategory()
-
     val uiState: StateFlow<DashboardUiState> = combine(
-        recentTransactions,
-        totalIncome,
-        totalExpense,
-        expenseDistribution
+        transactionRepository.getRecentTransactions(5),
+        transactionRepository.getTotalIncome(),
+        transactionRepository.getTotalExpense(),
+        transactionRepository.getExpensesByCategory()
     ) { recent, income, expense, distribution ->
         DashboardUiState(
-            balance = (income ?: 0.0) - (expense ?: 0.0),
-            totalIncome = income ?: 0.0,
-            totalExpense = expense ?: 0.0,
+            balance = income - expense,
             recentTransactions = recent,
             expenseDistribution = distribution
         )
@@ -44,8 +37,6 @@ class DashboardViewModel @Inject constructor(
 
 data class DashboardUiState(
     val balance: Double = 0.0,
-    val totalIncome: Double = 0.0,
-    val totalExpense: Double = 0.0,
     val recentTransactions: List<Transaction> = emptyList(),
-    val expenseDistribution: List<TransactionDao.CategoryExpense> = emptyList()
+    val expenseDistribution: List<CategoryExpense> = emptyList()
 )

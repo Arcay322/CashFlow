@@ -23,9 +23,9 @@ class CategoryManagementViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    fun addCategory(name: String, icon: String, type: String) {
+    fun addCategory(name: String, type: String) {
         viewModelScope.launch {
-            val newCategory = Category(name = name, icon = icon, type = type)
+            val newCategory = Category(name = name, type = type)
             categoryRepository.insertCategory(newCategory)
         }
     }

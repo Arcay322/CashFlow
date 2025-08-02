@@ -15,6 +15,10 @@ class CategoryRepository @Inject constructor(private val categoryDao: CategoryDa
         categoryDao.insert(category)
     }
 
+    suspend fun updateCategory(category: Category) { // <-- AÑADIDO
+        categoryDao.update(category)
+    }
+
     suspend fun deleteCategory(category: Category) {
         categoryDao.delete(category)
     }
