@@ -24,11 +24,12 @@ interface TransactionDao {
     fun getExpenseByCategory(): Flow<List<CategoryExpense>>
 
     @Query("SELECT SUM(amount) FROM `transaction` WHERE type = 'Ingreso'")
-    fun getTotalIncome(): Flow<Double>
+    fun getTotalIncome(): Flow<Double?> // Hacemos nullable por si no hay transacciones
 
     @Query("SELECT SUM(amount) FROM `transaction` WHERE type = 'Gasto'")
-    fun getTotalExpense(): Flow<Double>
-
-    // Clase de datos para el resultado de la consulta agrupada
-    data class CategoryExpense(val category: String, val total: Double)
+    fun getTotalExpense(): Flow<Double?> // Hacemos nullable por si no hay transacciones
 }
+
+// Clase de datos para el resultado de la consulta agrupada
+// La sacamos fuera de la interfaz para que sea una clase de primer nivel
+data class CategoryExpense(val category: String, val total: Double)
