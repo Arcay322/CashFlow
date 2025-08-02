@@ -7,9 +7,10 @@ import androidx.room.PrimaryKey
 data class Transaction(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    val type: String, // "Ingreso" o "Gasto"
+    val type: String,
     val amount: Double,
     val category: String,
     val description: String,
-    val date: Long
+    val date: Long,
+    val timestamp: Long // Campo añadido
 )

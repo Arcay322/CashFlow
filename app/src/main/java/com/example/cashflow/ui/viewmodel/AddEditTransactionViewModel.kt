@@ -26,44 +26,27 @@ data class AddTransactionUiState(
 @HiltViewModel
 class AddEditTransactionViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
-    val categoryRepository: CategoryRepository // Hacemos público para que la UI acceda a las categorías
+    val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AddTransactionUiState())
     val uiState = _uiState.asStateFlow()
 
     fun onAmountChange(newAmount: String) {
-        // Permitir solo números y un punto decimal
         if (newAmount.matches(Regex("^\\d*\\.?\\d*\$"))) {
             _uiState.update { it.copy(amount = newAmount) }
         }
     }
-
-    fun onTypeChange(newType: String) {
-        _uiState.update { it.copy(type = newType) }
-    }
-
-    fun onCategoryChange(newCategory: String) {
-        _uiState.update { it.copy(category = newCategory) }
-    }
-
-    fun onDescriptionChange(newDescription: String) {
-        _uiState.update { it.copy(description = newDescription) }
-    }
-
-    fun onDateChange(newDate: Long) {
-        _uiState.update { it.copy(date = newDate) }
-    }
+    fun onTypeChange(newType: String) { _uiState.update { it.copy(type = newType) } }
+    fun onCategoryChange(newCategory: String) { _uiState.update { it.copy(category = newCategory) } }
+    fun onDescriptionChange(newDescription: String) { _uiState.update { it.copy(description = newDescription) } }
+    fun onDateChange(newDate: Long) { _uiState.update { it.copy(date = newDate) } }
 
     fun saveTransaction() {
-        if (_uiState.value.amount.isBlank() || _uiState.value.category.isBlank()) {
-            // Aquí se podría añadir lógica para mostrar un error al usuario
-            return
-        }
+        if (_uiState.value.amount.isBlank() || _uiState.value.category.isBlank()) return
         
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
-            
             val newTransaction = Transaction(
                 type = _uiState.value.type,
                 amount = _uiState.value.amount.toDoubleOrNull() ?: 0.0,
@@ -72,9 +55,7 @@ class AddEditTransactionViewModel @Inject constructor(
                 date = _uiState.value.date,
                 timestamp = Date().time
             )
-            
             transactionRepository.insertTransaction(newTransaction)
-            
             _uiState.update { it.copy(isSaving = false, transactionSaved = true) }
         }
     }

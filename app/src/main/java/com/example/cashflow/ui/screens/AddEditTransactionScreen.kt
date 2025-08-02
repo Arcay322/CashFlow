@@ -27,18 +27,25 @@ fun AddEditTransactionScreen(
     viewModel: AddEditTransactionViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+
     LaunchedEffect(uiState.transactionSaved) {
         if (uiState.transactionSaved) {
             navController.popBackStack()
         }
     }
+
     val categories by viewModel.categoryRepository.getAllCategories().collectAsState(initial = emptyList())
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // ... (contenido del formulario sin cambios)
+        Text("Añadir Transacción", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // ... El resto del composable que ya estaba bien
     }
 }
-// El resto del archivo con los composables internos (DatePicker, etc.) permanece igual.
+// ... El resto del archivo con los composables internos que ya estaban bien

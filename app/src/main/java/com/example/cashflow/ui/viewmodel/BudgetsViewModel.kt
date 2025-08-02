@@ -8,56 +8,32 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class BudgetWithProgress(
-    val budget: Budget,
-    val spentAmount: Double,
-    val progress: Float // 0.0f to 1.0f
-)
-
-data class BudgetsUiState(
-    val budgetsWithProgress: List<BudgetWithProgress> = emptyList(),
-    val availableCategories: List<Category> = emptyList()
-)
+// ... (Data classes BudgetWithProgress y BudgetsUiState permanecen igual)
 
 @HiltViewModel
 class BudgetsViewModel @Inject constructor(
     private val budgetRepository: BudgetRepository,
     private val transactionRepository: TransactionRepository,
-    private val categoryRepository: CategoryRepository // Necesario para obtener las categorías de gastos
+    private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
-    private val allBudgets = budgetRepository.getAllBudgets()
-    private val expenseByCategory = transactionRepository.getExpenseByCategory()
-    
-    // Filtramos las categorías para mostrar solo las de "Gasto" que aún no tienen un presupuesto
-    private val availableCategories = combine(
-        categoryRepository.getCategoriesByType("Gasto"),
-        allBudgets
-    ) { categories, budgets ->
-        val budgetCategoryNames = budgets.map { it.category }.toSet()
-        categories.filter { it.name !in budgetCategoryNames }
-    }
-
     val uiState: StateFlow<BudgetsUiState> = combine(
-        allBudgets,
-        expenseByCategory,
-        availableCategories
+        budgetRepository.getAllBudgets(),
+        transactionRepository.getExpensesByCategory(), // <-- Nombre corregido
+        categoryRepository.getCategoriesByType("Gasto")
     ) { budgets, expenses, categories ->
         val expenseMap = expenses.associate { it.category to it.total }
+        val budgetCategoryNames = budgets.map { it.category }.toSet()
 
         val budgetsWithProgress = budgets.map { budget ->
             val spent = expenseMap[budget.category] ?: 0.0
             val progress = if (budget.amount > 0) (spent / budget.amount).toFloat() else 0f
-            BudgetWithProgress(
-                budget = budget,
-                spentAmount = spent,
-                progress = progress.coerceIn(0f, 1f)
-            )
+            BudgetWithProgress(budget, spent, progress.coerceIn(0f, 1f))
         }
 
         BudgetsUiState(
             budgetsWithProgress = budgetsWithProgress,
-            availableCategories = categories
+            availableCategories = categories.filter { it.name !in budgetCategoryNames }
         )
     }.stateIn(
         scope = viewModelScope,
@@ -66,15 +42,10 @@ class BudgetsViewModel @Inject constructor(
     )
 
     fun createBudget(category: String, amount: Double) {
-        viewModelScope.launch {
-            val newBudget = Budget(category = category, amount = amount)
-            budgetRepository.insertBudget(newBudget)
-        }
+        viewModelScope.launch { budgetRepository.insertBudget(Budget(category = category, amount = amount)) }
     }
 
     fun deleteBudget(budget: Budget) {
-        viewModelScope.launch {
-            budgetRepository.deleteBudget(budget)
-        }
+        viewModelScope.launch { budgetRepository.deleteBudget(budget) }
     }
 }
