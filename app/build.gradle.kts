@@ -11,12 +11,15 @@ android {
 
     defaultConfig {
         applicationId = "com.example.cashflow"
-        minSdk = 27
+        minSdk = 24
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        vectorDrawables {
+            useSupportLibrary = true
+        }
     }
 
     buildTypes {
@@ -39,8 +42,12 @@ android {
         compose = true
     }
     composeOptions {
-        // Dejamos que el BOM (Bill of Materials) de Compose gestione la versión
-        // kotlinCompilerExtensionVersion = "1.5.11" // <- Línea eliminada
+        kotlinCompilerExtensionVersion = "1.5.8"
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
     }
 }
 
