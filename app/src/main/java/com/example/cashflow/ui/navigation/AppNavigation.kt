@@ -6,7 +6,12 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.cashflow.ui.screens.*
+import com.example.cashflow.ui.screens.AddEditTransactionScreen
+import com.example.cashflow.ui.screens.BudgetsScreen
+import com.example.cashflow.ui.screens.CategoryManagementScreen
+import com.example.cashflow.ui.screens.DashboardScreen
+import com.example.cashflow.ui.screens.SettingsScreen
+import com.example.cashflow.ui.screens.TransactionHistoryScreen
 
 @Composable
 fun AppNavigation(navController: NavHostController, modifier: Modifier = Modifier) {

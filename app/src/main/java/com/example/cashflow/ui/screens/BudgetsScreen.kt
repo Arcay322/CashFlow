@@ -35,7 +35,43 @@ fun BudgetsScreen(viewModel: BudgetsViewModel = hiltViewModel()) {
             }
         }
     ) { padding ->
-        // ... (Contenido principal sin cambios, ahora compilará)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            Text("Presupuestos", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 16.dp))
+            
+            if (uiState.budgetsWithProgress.isEmpty()) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Aún no has creado ningún presupuesto.")
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(uiState.budgetsWithProgress) { budgetWithProgress ->
+                        BudgetCard(
+                            item = budgetWithProgress,
+                            onDelete = { viewModel.deleteBudget(it) }
+                        )
+                    }
+                }
+            }
+        }
+
+        if (showCreateDialog) {
+            CreateBudgetDialog(
+                availableCategories = uiState.availableCategories,
+                onDismiss = { showCreateDialog = false },
+                onCreate = { category, amount ->
+                    viewModel.createBudget(category, amount)
+                    showCreateDialog = false
+                }
+            )
+        }
     }
 }
 
@@ -49,14 +85,101 @@ private fun BudgetCard(item: BudgetWithProgress, onDelete: (Budget) -> Unit) {
 
     GlassmorphismCard {
         Column(modifier = Modifier.padding(16.dp)) {
-            // ... (Contenido sin cambios)
-            Text(text = "${formatCurrency(item.spentAmount)} de ${formatCurrency(item.budget.amount)}")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = item.budget.category,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { onDelete(item.budget) }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar Presupuesto")
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "${formatCurrency(item.spentAmount)} de ${formatCurrency(item.budget.amount)}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             LinearProgressIndicator(
-                progress = item.progress, // <-- LLAMADA CORREGIDA
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
+                progress = item.progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(MaterialTheme.shapes.small),
                 color = progressColor
             )
         }
     }
 }
-// ... (El resto del archivo sin cambios)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateBudgetDialog(
+    availableCategories: List<Category>,
+    onDismiss: () -> Unit,
+    onCreate: (String, Double) -> Unit
+) {
+    var amount by remember { mutableStateOf("") }
+    var expanded by remember { mutableStateOf(false) }
+    var selectedCategory by remember { mutableStateOf<Category?>(null) }
+    val isFormValid = amount.isNotBlank() && selectedCategory != null
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Nuevo Presupuesto") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = selectedCategory?.name ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Categoría") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier.menuAnchor()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        availableCategories.forEach { category ->
+                            DropdownMenuItem(
+                                text = { Text(category.name) },
+                                onClick = {
+                                    selectedCategory = category
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = { if (it.matches(Regex("^\\d*\\.?\\d*\$"))) amount = it },
+                    label = { Text("Monto del Presupuesto") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onCreate(selectedCategory!!.name, amount.toDouble()) },
+                enabled = isFormValid
+            ) {
+                Text("Crear")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
+}
