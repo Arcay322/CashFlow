@@ -19,9 +19,60 @@ import com.example.cashflow.ui.navigation.Routes
 @Composable
 fun SettingsScreen(navController: NavController) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        // ... (Contenido sin cambios, ahora compilará)
+        Text("Ajustes", style = MaterialTheme.typography.headlineMedium, modifier = Modifier.padding(bottom = 24.dp))
+
+        SettingsItem(
+            icon = Icons.Default.Category,
+            title = "Gestionar Categorías",
+            onClick = { navController.navigate(Routes.CATEGORY_MANAGEMENT) }
+        )
+        
+        Divider()
+        
+        SettingsItem(
+            icon = Icons.Default.DarkMode,
+            title = "Tema Oscuro",
+            trailingContent = {
+                var isChecked by remember { mutableStateOf(false) }
+                Switch(checked = isChecked, onCheckedChange = { isChecked = it })
+            }
+        )
+        
+        Divider()
+
+        SettingsItem(
+            icon = Icons.Default.UploadFile,
+            title = "Exportar a CSV",
+            onClick = { /* Lógica de exportación aquí */ }
+        )
     }
 }
-// ... (El resto del archivo sin cambios)
+
+@Composable
+private fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    onClick: (() -> Unit)? = null,
+    trailingContent: @Composable (() -> Unit)? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
+            .padding(vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(icon, contentDescription = title, modifier = Modifier.size(24.dp))
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        if (trailingContent != null) {
+            trailingContent()
+        } else if (onClick != null) {
+            Icon(Icons.AutoMirrored.Filled.ArrowForwardIos, contentDescription = "Ir a $title", modifier = Modifier.size(16.dp))
+        }
+    }
+}
