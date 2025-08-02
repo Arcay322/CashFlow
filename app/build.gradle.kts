@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.cashflow"
-        minSdk = 24
+        minSdk = 26 // <--- ¡AQUÍ ESTÁ LA CORRECCIÓN!
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
