@@ -2,7 +2,10 @@ package com.example.cashflow.di
 
 import android.content.Context
 import androidx.room.Room
-import com.example.cashflow.data.*
+import com.example.cashflow.data.AppDatabase
+import com.example.cashflow.data.BudgetDao
+import com.example.cashflow.data.CategoryDao
+import com.example.cashflow.data.TransactionDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -20,10 +23,8 @@ object AppModule {
         return Room.databaseBuilder(
             context,
             AppDatabase::class.java,
-            "cashflow_db"
+            "cashflow_database"
         )
-        // Eliminamos la pre-población para evitar ciclos de dependencia en la compilación.
-        // La gestión de datos iniciales se puede manejar de otra forma si es necesario.
         .fallbackToDestructiveMigration()
         .build()
     }
@@ -36,7 +37,4 @@ object AppModule {
 
     @Provides
     fun provideCategoryDao(db: AppDatabase): CategoryDao = db.categoryDao()
-
-    // Los repositorios no necesitan @Provides si usan @Inject en su constructor.
-    // Hilt sabe cómo crearlos automáticamente.
 }

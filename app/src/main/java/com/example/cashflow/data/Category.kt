@@ -1,10 +1,12 @@
+package com.example.cashflow.data
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "category")
+@Entity(tableName = "categories")
 data class Category(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
     val name: String,
-    val icon: String, // Or Int, depending on how you store icon references
-    val type: String? // "Ingreso" or "Gasto", nullable
+    val type: String // "Ingreso" o "Gasto"
 )

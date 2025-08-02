@@ -1,3 +1,5 @@
+package com.example.cashflow.data
+
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
