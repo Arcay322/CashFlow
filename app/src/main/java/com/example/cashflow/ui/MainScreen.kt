@@ -21,7 +21,7 @@ import com.example.cashflow.ui.navigation.Routes
 import com.example.cashflow.ui.theme.CashFlowTheme
 
 @Composable
-fun MainScreen() { // <-- FUNCIÓN RENOMBRADA
+fun MainScreen() {
     CashFlowTheme {
         val navController = rememberNavController()
         Scaffold(
