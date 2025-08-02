@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    // El plugin de compose se gestiona con el compilador de Kotlin, no es necesario un alias separado
     alias(libs.plugins.hilt)
     alias(libs.plugins.ksp)
 }
@@ -40,7 +39,8 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.11"
+        // Dejamos que el BOM (Bill of Materials) de Compose gestione la versión
+        // kotlinCompilerExtensionVersion = "1.5.11" // <- Línea eliminada
     }
 }
 
